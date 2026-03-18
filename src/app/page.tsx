@@ -5,6 +5,7 @@ export default function Home() {
       <ul className="list-disc pl-5">
         <li><a href="/bass-guitar" className="text-blue-500 hover:underline">베이스 시뮬레이터 프로젝트</a></li>
         <li><a href="/hand-gesture" className="text-blue-500 hover:underline">3D 핸드 제스처 프로젝트</a></li>
+        <li><a href="/LP" className="text-blue-500 hover:underline">3D 빈티지 미니멀 턴테이블 (LP)</a></li>
       </ul>
     </main>
   );
