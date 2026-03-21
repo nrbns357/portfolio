@@ -1,0 +1,3 @@
+src/features/vinyl/components/TurntableModel.tsx(34,16): error TS2540: Cannot assign to 'current' because it is a read-only property.
+src/features/vinyl/components/TurntableModel.tsx(44,12): error TS2540: Cannot assign to 'current' because it is a read-only property.
+src/features/vinyl/components/TurntableModel.tsx(70,10): error TS2339: Property 'group' does not exist on type 'JSX.IntrinsicElements'.

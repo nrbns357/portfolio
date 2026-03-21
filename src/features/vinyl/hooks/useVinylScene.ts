@@ -1,8 +1,9 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 export const useVinylScene = (containerRef: React.RefObject<HTMLDivElement>) => {
+  const [sceneState, setSceneState] = useState<THREE.Scene | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -10,7 +11,7 @@ export const useVinylScene = (containerRef: React.RefObject<HTMLDivElement>) => 
   const animationFrameId = useRef<number>(0);
 
   const initScene = useCallback(async () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || sceneRef.current) return;
     
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
@@ -18,6 +19,7 @@ export const useVinylScene = (containerRef: React.RefObject<HTMLDivElement>) => 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#1a1a1a");
     sceneRef.current = scene;
+    setSceneState(scene);
 
     const aspect = width / height;
     const d = 9;
@@ -79,5 +81,5 @@ export const useVinylScene = (containerRef: React.RefObject<HTMLDivElement>) => 
     };
   }, []);
 
-  return { initScene, scene: sceneRef.current, camera: cameraRef.current, renderer: rendererRef.current };
+  return { initScene, scene: sceneState, camera: cameraRef.current, renderer: rendererRef.current };
 };

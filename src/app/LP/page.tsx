@@ -6,40 +6,39 @@ import { VinylCanvas } from "@/features/vinyl/components/VinylCanvas";
 import { VinylShelf } from "@/features/vinyl/components/VinylShelf";
 import { useVinylState } from "@/features/vinyl/hooks/useVinylState";
 import { useVinylAudio } from "@/features/vinyl/hooks/useVinylAudio";
-import { Play, Pause, Disc } from "lucide-react";
-
-const INITIAL_RECORDS = [
-  {
-    id: "1",
-    youtubeId: "W9nPn_wlk1U",
-    title: "Vintage Jazz Set",
-    artist: "Various Artists",
-    thumbUrl: "https://img.youtube.com/vi/W9nPn_wlk1U/maxresdefault.jpg"
-  },
-  {
-    id: "2",
-    youtubeId: "jfKfPfyJRdk",
-    title: "Lofi Hip Hop Radio",
-    artist: "Lofi Girl",
-    thumbUrl: "https://img.youtube.com/vi/jfKfPfyJRdk/maxresdefault.jpg"
-  },
-  {
-    id: "3",
-    youtubeId: "5qap5aO4i9A",
-    title: "Synthwave Nights",
-    artist: "Retro Wave",
-    thumbUrl: "https://img.youtube.com/vi/5qap5aO4i9A/maxresdefault.jpg"
-  }
-];
+import { Play, Pause, Disc, Plus } from "lucide-react";
 
 export default function LPPage() {
-  const { state, setPlaying, selectVinyl } = useVinylState(INITIAL_RECORDS);
+  const [records, setRecords] = useState<Array<{id: string; youtubeId: string; title: string; artist: string; thumbUrl: string}>>([]);
+  const [inputValue, setInputValue] = useState("");
+  const { state, setPlaying, selectVinyl } = useVinylState([]);
   const { initAudio, setCrackleVolume } = useVinylAudio();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleAddLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    const match = inputValue.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/|.*embed\/|.*shorts\/))([^?&/]+)/);
+    if (match && match[1]) {
+      const newId = match[1];
+      const newRecord = {
+        id: Math.random().toString(),
+        youtubeId: newId,
+        title: "Youtube Track",
+        artist: "Custom Link",
+        thumbUrl: `https://img.youtube.com/vi/${newId}/hqdefault.jpg`
+      };
+      setRecords((prev) => [...prev, newRecord]);
+      selectVinyl(newRecord);
+      setPlaying(false); // Reset playing state before autoplay logic or just stop to let user start
+      setInputValue("");
+    } else {
+      alert("올바른 유튜브 링크가 아닙니다.");
+    }
+  };
 
   useEffect(() => {
     if (state.isPlaying) {
@@ -61,9 +60,10 @@ export default function LPPage() {
         labelTextureUrl={state.currentVinyl?.thumbUrl}
       />
 
-      {/* LP Shelf UI */}
+      {/* LP Collection (Right Panel) */}
       <VinylShelf 
-        records={INITIAL_RECORDS} 
+        records={records} 
+        currentId={state.currentVinyl?.id}
         onSelect={selectVinyl} 
       />
 
@@ -75,6 +75,20 @@ export default function LPPage() {
         <p className="text-gray-500 tracking-widest text-[10px] uppercase mt-1">
            Advanced Vinyl Audio Hub
         </p>
+
+        {/* URL Input */}
+        <form onSubmit={handleAddLink} className="mt-6 flex gap-2 pointer-events-auto">
+          <input 
+            type="text" 
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="유튜브 링크 입력" 
+            className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 w-60 backdrop-blur-md"
+          />
+          <button type="submit" className="bg-white text-black p-2 rounded-xl hover:scale-105 transition-transform flex items-center justify-center w-10">
+            <Plus size={18} />
+          </button>
+        </form>
         
         {state.currentVinyl && (
           <div className="mt-8 flex items-center gap-4 bg-white/5 backdrop-blur-xl p-4 rounded-2xl border border-white/10 pointer-events-auto">

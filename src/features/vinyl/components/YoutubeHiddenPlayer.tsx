@@ -34,7 +34,7 @@ export const YoutubeHiddenPlayer: React.FC<YoutubePlayerProps> = ({ videoId, isP
       <YouTube
         videoId={videoId}
         opts={opts}
-        onReady={(e) => {
+        onReady={(e: any) => {
           playerRef.current = e.target;
           onReady?.();
         }}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import * as Tone from 'tone';
+import type * as Tone from 'tone';
 
 export const useVinylAudio = () => {
   const noiseRef = useRef<Tone.Noise | null>(null);
@@ -7,19 +7,24 @@ export const useVinylAudio = () => {
   const isStarted = useRef(false);
 
   const initAudio = useCallback(async () => {
-    if (isStarted.current) return;
-    await Tone.start();
+    if (isStarted.current || typeof window === 'undefined') return;
+    const ToneModule = await import('tone');
+    await ToneModule.start();
     
     // Create subtle vinyl crackle
-    noiseRef.current = new Tone.Noise('pink').start();
-    filterRef.current = new AutoFilter({
+    noiseRef.current = new ToneModule.Noise('pink').start();
+    
+    filterRef.current = new ToneModule.AutoFilter({
       frequency: 0.1,
       baseFrequency: 500,
       octaves: 2.6,
       filter: { type: 'lowpass' }
-    }).toDestination().start();
+    } as any).toDestination().start() as any;
     
-    noiseRef.current.connect(filterRef.current);
+    if (filterRef.current) {
+      noiseRef.current.connect(filterRef.current as any);
+    }
+    
     noiseRef.current.volume.value = -Infinity; // Start silent
 
     isStarted.current = true;
@@ -40,6 +45,3 @@ export const useVinylAudio = () => {
 
   return { initAudio, setCrackleVolume };
 };
-
-// Internal fix for Tone.js types if needed
-class AutoFilter extends (Tone.AutoFilter as any) {}

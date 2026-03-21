@@ -14,7 +14,7 @@ interface VinylCanvasProps {
 export const VinylCanvas: React.FC<VinylCanvasProps> = ({ isPlaying, isNeedleDown, labelTextureUrl }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<any>(null);
-  const { initScene, renderer } = useVinylScene(containerRef);
+  const { initScene, renderer, scene } = useVinylScene(containerRef);
 
   useEffect(() => {
     initScene();
@@ -46,6 +46,7 @@ export const VinylCanvas: React.FC<VinylCanvasProps> = ({ isPlaying, isNeedleDow
         isPlaying={isPlaying} 
         needleDown={isNeedleDown} 
         labelTextureUrl={labelTextureUrl}
+        scene={scene as any}
       />
     </div>
   );
