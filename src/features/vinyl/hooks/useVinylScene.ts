@@ -1,85 +1,128 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-export const useVinylScene = (containerRef: React.RefObject<HTMLDivElement>) => {
-  const [sceneState, setSceneState] = useState<THREE.Scene | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
-  const animationFrameId = useRef<number>(0);
+export const useVinylScene = (containerRef: React.RefObject<HTMLDivElement | null>) => {
+  const [scene, setScene] = useState<THREE.Scene | null>(null);
+  const [camera, setCamera] = useState<THREE.OrthographicCamera | null>(null);
+  const [renderer, setRenderer] = useState<THREE.WebGLRenderer | null>(null);
 
-  const initScene = useCallback(async () => {
-    if (!containerRef.current || sceneRef.current) return;
-    
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#1a1a1a");
-    sceneRef.current = scene;
-    setSceneState(scene);
+    let width = container.clientWidth;
+    let height = container.clientHeight;
+
+    // Fallback for initial render
+    if (width === 0 || height === 0) {
+      width = window.innerWidth;
+      height = window.innerHeight;
+    }
+
+    const newScene = new THREE.Scene();
+    newScene.background = new THREE.Color("#1a1a1a");
 
     const aspect = width / height;
     const d = 9;
-    const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
-    camera.position.set(20, 20, 20);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
+    const newCamera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
+    newCamera.position.set(20, 20, 20);
+    newCamera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    rendererRef.current = renderer;
+    const newRenderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    newRenderer.setSize(width, height);
+    newRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    newRenderer.shadowMap.enabled = true;
+    newRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    newRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    newRenderer.toneMappingExposure = 1.2;
 
-    containerRef.current.appendChild(renderer.domElement);
+    container.appendChild(newRenderer.domElement);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(newCamera, newRenderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.1;
-    controlsRef.current = controls;
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
+    // Lighting - Cozy Warm Tone
+    const ambientLight = new THREE.AmbientLight(0xfff5e6, 0.15); // Much dimmer ambient
+    newScene.add(ambientLight);
     
-    const mainLight = new THREE.DirectionalLight(0xffeedd, 5.0);
-    mainLight.position.set(15, 25, 15);
-    mainLight.castShadow = true;
-    scene.add(mainLight);
+    // Warm spotlight from above/back
+    const spotLight = new THREE.SpotLight(0xffecd2, 800);
+    spotLight.position.set(10, 30, 5);
+    spotLight.angle = Math.PI / 4;
+    spotLight.penumbra = 0.5;
+    spotLight.decay = 2;
+    spotLight.distance = 100;
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.width = 2048;
+    spotLight.shadow.mapSize.height = 2048;
+    spotLight.shadow.bias = -0.0001;
+    newScene.add(spotLight);
+
+    // Soft fill light
+    const fillLight = new THREE.DirectionalLight(0xaabbff, 0.8);
+    fillLight.position.set(-15, 10, -15);
+    newScene.add(fillLight);
+
+    setScene(newScene);
+    setCamera(newCamera);
+    setRenderer(newRenderer);
+
+    let animationFrameId = 0;
+    let mouse = { x: 0, y: 0 };
 
     const animate = () => {
-      animationFrameId.current = requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
+      
+      // Parallax effect
+      const targetX = (mouse.x * 2.0);
+      const targetY = (mouse.y * 2.0);
+      
+      newCamera.position.x += (20 + targetX - newCamera.position.x) * 0.05;
+      newCamera.position.y += (20 - targetY - newCamera.position.y) * 0.05;
+      newCamera.position.z += (20 + targetX - newCamera.position.z) * 0.05;
+      
       controls.update();
-      renderer.render(scene, camera);
+      newRenderer.render(newScene, newCamera);
     };
     animate();
 
+    const handleMouseMove = (e: MouseEvent) => {
+      mouse = {
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: (e.clientY / window.innerHeight) * 2 - 1
+      };
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+
     const handleResize = () => {
-      if (!containerRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
+      if (!container) return;
+      let w = container.clientWidth;
+      let h = container.clientHeight;
+      if (w === 0 || h === 0) { w = window.innerWidth; h = window.innerHeight; }
+      
       const aspect = w / h;
-      camera.left = -d * aspect;
-      camera.right = d * aspect;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      newCamera.left = -d * aspect;
+      newCamera.right = d * aspect;
+      newCamera.updateProjectionMatrix();
+      newRenderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(animationFrameId.current);
+      cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      renderer.dispose();
+      window.removeEventListener('mousemove', handleMouseMove);
+      container.removeChild(newRenderer.domElement);
+      newRenderer.dispose();
       controls.dispose();
+      setScene(null);
+      setCamera(null);
+      setRenderer(null);
     };
   }, []);
 
-  return { initScene, scene: sceneState, camera: cameraRef.current, renderer: rendererRef.current };
+  return { scene, camera, renderer };
 };

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { YoutubeHiddenPlayer } from "@/features/vinyl/components/YoutubeHiddenPlayer";
 import { VinylCanvas } from "@/features/vinyl/components/VinylCanvas";
-import { VinylShelf } from "@/features/vinyl/components/VinylShelf";
+
 import { useVinylState } from "@/features/vinyl/hooks/useVinylState";
 import { useVinylAudio } from "@/features/vinyl/hooks/useVinylAudio";
 import { Play, Pause, Disc, Plus } from "lucide-react";
@@ -14,6 +14,16 @@ export default function LPPage() {
   const { state, setPlaying, selectVinyl } = useVinylState([]);
   const { initAudio, setCrackleVolume } = useVinylAudio();
   const [mounted, setMounted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [dustCoverOpen, setDustCoverOpen] = useState(true);
+
+  const handleDustCoverToggle = useCallback(() => {
+    setDustCoverOpen(prev => !prev);
+  }, []);
+
+  useEffect(() => {
+    setProgress(0);
+  }, [state.currentVinyl]);
 
   useEffect(() => {
     setMounted(true);
@@ -54,17 +64,16 @@ export default function LPPage() {
   return (
     <div className="relative w-full h-screen bg-[#050505] overflow-hidden text-white font-sans">
       {/* 3D Vinyl Player */}
-      <VinylCanvas 
+    <VinylCanvas 
         isPlaying={state.isPlaying} 
         isNeedleDown={state.isNeedleDown}
         labelTextureUrl={state.currentVinyl?.thumbUrl}
-      />
-
-      {/* LP Collection (Right Panel) */}
-      <VinylShelf 
-        records={records} 
+        records={records}
         currentId={state.currentVinyl?.id}
-        onSelect={selectVinyl} 
+        onSelect={selectVinyl}
+        progress={progress}
+        dustCoverOpen={dustCoverOpen}
+        onDustCoverToggle={handleDustCoverToggle}
       />
 
       {/* Control UI */}
@@ -114,6 +123,7 @@ export default function LPPage() {
         <YoutubeHiddenPlayer 
           videoId={state.currentVinyl.youtubeId} 
           isPlaying={state.isPlaying} 
+          onProgress={setProgress}
         />
       )}
 
